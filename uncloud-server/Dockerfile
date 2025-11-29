@@ -1,8 +1,9 @@
 FROM ghcr.io/iximiuz/labs/rootfs:ubuntu-docker
 
-RUN sudo sh -c 'apt update && apt install -y docker-ce=5:29.* --no-install-recommends'
+# Update Docker to latest stable
+RUN --mount=type=bind,source=scripts,target=/tmp/scripts sudo /tmp/scripts/install-docker.sh
 
 # Replace with curl after install is fixed
-COPY install.sh /opt/install.sh
+COPY uncloud-server/install.sh /opt/install.sh
 
 RUN sudo INSTALL_ONLY=true bash /opt/install.sh
