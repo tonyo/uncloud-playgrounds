@@ -1,0 +1,154 @@
+kind: playground
+name: uncloud-cluster-64523f7c
+base: flexbox
+title: Uncloud Cluster
+description: |-
+    A multi-node Uncloud cluster with a standalone control node.
+    About Uncloud: https://github.com/psviderski/uncloud
+cover: /content/files/playgrounds/uncloud-cluster-64523f7c/__static__/uncloud-logo-2.svg
+categories:
+    - linux
+    - networking
+    - containers
+markdown: "![](__static__/logo-title.svg)\n\n[Uncloud](https://uncloud.run/) is a lightweight alternative to Kubernetes for deploying and managing containerised applications across a network of Docker hosts. \n\nUseful links:\n* [GitHub project](https://github.com/psviderski/uncloud).\n* [Uncloud docs](https://uncloud.run/docs/)\n\n## Playground\n\nIn this playground you are given access to an already initialized Uncloud cluster of 2 nodes: `server-1` and `server-2`.\n\nThe control node (`dev-machine`) has the `uc` command line client installed so you can interact with the cluster right away.\n\nFor example, run the following commands from `dev-machine`:\n\n```bash\n\n# List all machines in the cluster\nuc machine ls\n\n# Run an Nginx instance in the cluster\nuc run nginx:latest\n\n# Run an Nginx instance and make it reachable via the provided hostname\nuc run nginx:latest -n web -p app.example.com:80/http\n\n# Verify that Nginx is working by sending an HTTP request with the correct \"Host\" header\ncurl -H 'Host: app.example.com' server-1\n# The webpage will also be available in the \"WebServer\" tab above.\n\n# Open a shell inside the Nginx container\nuc exec web\n\n# Scale the Nginx service from 1 to 2 containers (each running on a different server node)\nuc scale web 2\n```\n\n## Issues? Suggestions?\n\nIf you face any problems with the playground, open an issue on https://github.com/psviderski/uncloud/"
+playground:
+    networks:
+        - name: local
+          subnet: 172.16.0.0/24
+    machines:
+        - name: dev-machine
+          users:
+            - name: root
+            - name: laborant
+              default: true
+              welcome: "Welcome to the Uncloud playground \U0001F64C\n\nYou’re currently on a control node of an initialized Uncloud cluster with 2 server nodes.\n\nTry out some of these commands:\n\n# List all machines in the cluster\nuc machine ls\n\n# Run an Nginx instance in the cluster\nuc run nginx:latest\n\n# Run an Nginx instance and make it reachable via the provided hostname\nuc run nginx:latest -n web -p app.example.com:80/http\n\n# Verify that Nginx is working by sending an HTTP request with the correct \"Host\" header\ncurl -H 'Host: app.example.com' server-1\n# The webpage will also be available in the \"WebServer\" tab above.\n\n# Open a shell inside the Nginx container\nuc exec web\n\n# Scale the Nginx service from 1 to 2 containers (each running on a different server node)\nuc scale web 2\n\n---\nAbout Uncloud: https://github.com/psviderski/uncloud/  \nDocumentation: https://uncloud.run/docs/\n"
+          drives:
+            - source: docker
+              mount: /
+              size: 10GIB
+          network:
+            interfaces:
+                - network: local
+          resources:
+            cpuCount: 1
+            ramSize: 1GiB
+        - name: server-1
+          users:
+            - name: root
+            - name: laborant
+              default: true
+              welcome: "This is a server managed by Uncloud \U0001F680\n\nIt's recommended to use `uc` command-line client from the `dev-machine` instance to\ninspect and manage workloads on this machine, but you can of course directly experiment with this system as well.  \n\n---\nAbout Uncloud: https://github.com/psviderski/uncloud/\nDocumentation: https://uncloud.run/docs/"
+          drives:
+            - source: oci://ghcr.io/tonyo/uncloud-playgrounds/rootfs:uncloud-server
+              mount: /
+              size: 10GIB
+          network:
+            interfaces:
+                - network: local
+          resources:
+            cpuCount: 1
+            ramSize: 2GiB
+        - name: server-2
+          users:
+            - name: root
+            - name: laborant
+              default: true
+              welcome: "This is a server managed by Uncloud \U0001F680\n\nIt's recommended to use `uc` command-line client from the `dev-machine` instance to\ninspect and manage workloads on this machine, but you can of course directly experiment with this system as well.  \n\n---\nAbout Uncloud: https://github.com/psviderski/uncloud/\nDocumentation: https://uncloud.run/docs/"
+          drives:
+            - source: oci://ghcr.io/tonyo/uncloud-playgrounds/rootfs:uncloud-server
+              mount: /
+              size: 10GIB
+          network:
+            interfaces:
+                - network: local
+          resources:
+            cpuCount: 1
+            ramSize: 2GiB
+    tabs:
+        - id: terminal-dev-machine
+          kind: terminal
+          name: dev-machine
+          machine: dev-machine
+        - id: terminal-server-1
+          kind: terminal
+          name: server-1
+          machine: server-1
+        - id: terminal-server-2
+          kind: terminal
+          name: server-2
+          machine: server-2
+        - id: http-port-0bk8ltuf7a7q
+          kind: http-port
+          name: WebServer
+          machine: server-1
+          number: 80
+          access: public
+          hostRewrite: app.example.com
+    initTasks:
+        add_machines:
+            name: add_machines
+            machine: dev-machine
+            init: true
+            user: laborant
+            timeout_seconds: 300
+            needs:
+                - install_uncloud_cli
+            run: |-
+                set -x
+
+                exec > /tmp/output.log 2>&1
+
+                # Hosts to wait for
+                HOSTS=("server-1" "server-2")
+
+                echo "Waiting for SSH availability on: ${HOSTS[*]}"
+
+                for HOST in "${HOSTS[@]}"; do
+                  echo "Checking $HOST..."
+                  until ssh -n -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=3 "$HOST" "echo connected" &>/dev/null; do
+                    echo "$HOST not available yet... retrying in 3 seconds."
+                    sleep 3
+                  done
+                  echo "$HOST is available!"
+                done
+
+                echo "All servers are reachable."
+
+                ### Init cluster
+
+                # Add first machine
+                uc machine init --no-dns -n server-1 laborant@server-1
+
+                # Add second machine
+                uc machine add -n server-2 laborant@server-2
+        init_server_1_1:
+            name: init_server_1_1
+            machine: server-1
+            init: true
+            user: root
+            timeout_seconds: 300
+            run: docker pull caddy:latest
+        init_server_2_1:
+            name: init_server_2_1
+            machine: server-2
+            init: true
+            user: root
+            timeout_seconds: 300
+            run: docker pull caddy:latest
+        install_uncloud_cli:
+            name: install_uncloud_cli
+            machine: dev-machine
+            init: true
+            user: root
+            timeout_seconds: 300
+            run: |+
+                # Install CLI
+                curl -fsS https://get.uncloud.run/install.sh | sh
+
+    accessControl:
+        canList:
+            - owner
+        canRead:
+            - anyone
+        canStart:
+            - anyone
