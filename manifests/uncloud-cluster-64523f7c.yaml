@@ -10,7 +10,7 @@ categories:
     - linux
     - networking
     - containers
-markdown: "![](__static__/logo-title.svg)\n\n[Uncloud](https://uncloud.run/) is a lightweight alternative to Kubernetes for deploying and managing containerised applications across a network of Docker hosts. \n\nUseful links:\n* [GitHub project](https://github.com/psviderski/uncloud).\n* [Uncloud docs](https://uncloud.run/docs/)\n\n## Playground\n\nIn this playground you are given access to an already initialized Uncloud cluster of 2 nodes: `server-1` and `server-2`.\n\nThe control node (`dev-machine`) has the `uc` command line client installed so you can interact with the cluster right away.\n\nFor example, run the following commands from `dev-machine`:\n\n```bash\n\n# List all machines in the cluster\nuc machine ls\n\n# Run an Nginx instance in the cluster\nuc run nginx:latest\n\n# Run an Nginx instance and make it reachable via the provided hostname\nuc run nginx:latest -n web -p app.example.com:80/http\n\n# Verify that Nginx is working by sending an HTTP request with the correct \"Host\" header\ncurl -H 'Host: app.example.com' server-1\n# The webpage will also be available in the \"WebServer\" tab above.\n\n# Open a shell inside the Nginx container\nuc exec web\n\n# Scale the Nginx service from 1 to 2 containers (each running on a different server node)\nuc scale web 2\n```\n\n## Issues? Suggestions?\n\nIf you face any problems with the playground, open an issue on https://github.com/psviderski/uncloud/"
+markdown: "![](__static__/logo-title.svg)\n\n[Uncloud](https://uncloud.run/) is a lightweight alternative to Kubernetes for deploying and managing containerised applications across a network of Docker hosts. \n\nUseful links:\n* [Uncloud @ GitHub](https://github.com/psviderski/uncloud).\n* [Uncloud docs](https://uncloud.run/docs/)\n\n## Playground\n\nIn this playground you are given access to an already initialized Uncloud cluster of 2 nodes: `server-1` and `server-2`.\n\nThe control node (`dev-machine`) has the `uc` command line client installed so you can interact with the cluster right away.\n\nFor example, run the following commands from `dev-machine`:\n\n```bash\n\n# List all machines in the cluster\nuc machine ls\n\n# Run an Nginx instance in the cluster\nuc run nginx:latest\n\n# Run an Nginx instance and make it reachable via the provided hostname\nuc run nginx:latest -n web -p app.example.com:80/http\n\n# Verify that Nginx is working by sending an HTTP request with the correct \"Host\" header\ncurl -H 'Host: app.example.com' server-1\n# The webpage will also be available in the \"WebServer\" tab above.\n\n# Open a shell inside the Nginx container\nuc exec web\n\n# Scale the Nginx service from 1 to 2 containers (each running on a different server node)\nuc scale web 2\n```\n\n## Issues? Suggestions?\n\nIf you face any problems with the playground, open an issue on https://github.com/tonyo/uncloud-labs/"
 playground:
     networks:
         - name: local
@@ -135,7 +135,7 @@ playground:
             run: docker pull caddy:latest
     accessControl:
         canList:
-            - owner
+            - anyone
         canRead:
             - anyone
         canStart:
