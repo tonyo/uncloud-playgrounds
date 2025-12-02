@@ -41,6 +41,9 @@ jobs:
       - name: Build image
         run: make build-${{ matrix.image }}
 
+      - name: Test image
+        run: make test-${{ matrix.image }}
+
       - name: Push image
         if: github.ref == 'refs/heads/main'
         run: make push-${{ matrix.image }}
