@@ -31,7 +31,7 @@ PLAYGROUND_IDS = \
 # Save playground manifests locally
 pull-playgrounds:
 	@for id in $(PLAYGROUND_IDS); do \
-		labctl playground manifest $$id > manifests/$$id.yaml; \
+		labctl playground manifest $$id > manifests/playgrounds/$$id.yaml; \
 		echo ">>> Saved playground manifest for: $$id"; \
 	done
 .PHONY: pull-playgrounds
@@ -39,7 +39,7 @@ pull-playgrounds:
 push-playgrounds:
 	@for id in $(PLAYGROUND_IDS); do \
 		echo '---'; \
-		labctl playground update $$id -f ./manifests/$$id.yaml; \
+		labctl playground update $$id -f ./manifests/playgrounds/$$id.yaml; \
 		echo ">>> Pushed playground manifest for: $$id"; \
 	done
 .PHONY: push-playgrounds
