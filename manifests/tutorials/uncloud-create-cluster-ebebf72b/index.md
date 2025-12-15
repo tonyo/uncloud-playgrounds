@@ -48,11 +48,33 @@ _Click on the image to zoom in._
 
 ## Tutorial Environment
 
-It is highly encouraged to take advantage of the interactive features of the iximiuz Labs platform and follow the tutorial by executing the commands in the interactive. To get started, click the "Start Tutorial" button at the left side
+It is highly encouraged to take advantage of the interactive features of the [iximiuz Labs platform](https://labs.iximiuz.com/about) and follow the tutorial by executing the commands in the interactive environment.
 
-After you start the linked playground, you'll on the developer machine, which will serve as your control node for managing the cluster.
+To get started, click the "Start Tutorial" button located under the table of contents on the left side of the screen (like, do it right now!). After a few seconds, you'll see a terminal on the right side of your screen.
 
-Uncloud CLI (`uc` for short) is already installed. If you're setting this up on your own machine, check out the [installation guide](https://uncloud.run/docs/getting-started/install-cli) for instructions.
+In this tutorial, you have access to 3 machines:
+
+- :tab{text='dev-machine' machine='dev-machine'} - the control-only environment that is not meant to run any actual containerized workloads. Think of it as your developer machine that you'll use to control the prospective cluster remotely.
+- :tab{text='server-1' machine='server-1'}, :tab{text='server-2' machine='server-2'} - two "clean" Ubuntu machines that will become part of your new Uncloud cluster.
+
+After you start the linked playground, you'll first see the shell on the :tab{text='dev-machine' machine='dev-machine'} machine with Uncloud CLI (`uc` for short) already installed there. To install `uc` manually on your local (personal, non-tutorial) machine, check out the [installation guide](https://uncloud.run/docs/getting-started/install-cli) for instructions.
+
+To test that the `uc` command works, run the following to get the version of the Uncloud client:
+
+```bash
+laborant@dev-machine:~$ uc --version
+uc version ...
+```
+
+<!-- prettier-ignore-start -->
+::remark-box
+---
+kind: warning
+---
+
+⚠️ The terms "nodes", "machines", and "servers" in this tutorial are used interchangeably.
+::
+<!-- prettier-ignore-end -->
 
 ## Initializing a New Cluster
 
@@ -63,14 +85,18 @@ Run the following commands on `dev-machine`:
 uc machine init laborant@server-1 --public-ip none --no-dns
 ```
 
-This command will install Docker, the Uncloud daemon (`uncloudd`), and all necessary dependencies on the remote machine. One critical component which is also installed automatically is the [Corrosion](https://github.com/superfly/corrosion) service which will helpfully handle state synchronization and service discovery as soon as there's more than one machine in the cluster. Documentation on the `machine init` command can be found [here](https://uncloud.run/docs/cli-reference/uc_machine_init/).
+This command will install Docker, the Uncloud daemon (`uncloudd`), and all necessary dependencies on the remote machine. One critical component which is also installed automatically is the [Corrosion](https://github.com/superfly/corrosion) service, which will helpfully handle state synchronization and service discovery as soon as there's more than one machine in the cluster. Documentation on the `machine init` command can be found [here](https://uncloud.run/docs/cli-reference/uc_machine_init/).
 
 ::remark-box
-**Why use `--public-ip none`?** The `--public-ip none` flag tells Uncloud not to configure this machine for ingress (incoming internet traffic). In the iximiuz Labs environment the node
+**Why use `--public-ip none`?** The `--public-ip none` flag tells Uncloud not to configure this machine for ingress (incoming internet traffic). In the iximiuz Labs environment, the machines don't have real public IP addresses accessible from the internet, so we disable ingress configuration. In production, you'd typically use `--public-ip auto` to automatically detect and configure ingress.
+
+FIXME
 ::
 
 ::remark-box
-**Why use `--no-dns`?** The `--no-dns` flag skips reserving a free `*.uncld.dev` subdomain via Uncloud's managed DNS service. In the iximiuz Labs environment, you may not need external DNS. You can always reserve a domain later with `uc dns reserve` if needed.
+**Why use `--no-dns`?** The `--no-dns` flag skips reserving a free `*.uncld.dev` subdomain via Uncloud's managed DNS service. In the iximiuz Labs environment, you don't need external DNS. You can always reserve a domain later with `uc dns reserve` if needed.
+
+FIXME
 ::
 
 You can get the list of machines in the cluster along with their configuration and status via `uc machine ls` (or `uc m ls`, if you want to save a few keystrokes) command:
@@ -81,12 +107,14 @@ NAME           STATE   ADDRESS         PUBLIC IP        WIREGUARD ENDPOINTS     
 machine-incv   Up      10.210.0.1/24   -                172.16.0.3:51820, 65.109.107.161:51820   6cec579e3d6fb7ffb51c5503d163f1be
 ```
 
-As we can see, `server-1` became the first (and the only so far) machiine in our new cluster. Uncloud
+As we can see, `server-1` became the first (and the only so far) machine in our new cluster. Let's break down what each column means:
 
-- `NAME: machine-incv`
-- `STATE: UP` --
-- `ADDRESS: 10.210.0.1/24` --
--
+- `NAME: machine-incv` - The unique name of the machine in the cluster; can be changed (see the [corresponding section below](#renaming-cluster-machines))
+- `STATE: Up` - The current state of the machine. "Up" means the machine is running and the Uncloud daemon is active.
+- `ADDRESS: 10.210.0.1/24` - The private IP address and subnet assigned to this machine in the WireGuard mesh network. Each machine gets its own `/24` subnet (e.g., 10.210.0.0/24, 10.210.1.0/24) from which container IP addresses are allocated.
+- `PUBLIC IP: -` - The public IP address of the machine for ingress (if configured). Since we used `--public-ip none`, this field is empty and shows `-`.
+- `WIREGUARD ENDPOINTS` - The network endpoints where this machine's WireGuard interface can be reached by other machines in the cluster. This includes both private and public IP addresses with the WireGuard port.
+- `MACHINE ID` - A unique identifier for the machine; it doesn't change throughout the lifecycle of the machine.
 
 ## Adding Another Machine to the Cluster
 
@@ -159,7 +187,7 @@ contexts:
         ssh_key_file: ~/.ssh/id_ed25519
 ```
 
-**Note:** A cluster context can have one or more connections, and each connection represents a way to reach a machine in the cluster via SSH. When you run commands, Uncloud automatically uses one of the available connections to communicate with the cluster. If one machine is unreachable, Uncloud will try another connection, making your cluster more resilient.
+**Note:** A cluster context can have one or more connections, and each connection represents a way to reach a machine in the cluster via SSH. When you run commands, Uncloud automatically uses one of the available connections to communicate with the cluster. If one machine is unreachable, Uncloud CLI will try another connection until it finds the working one.
 
 ## Running a Simple Service
 
@@ -168,14 +196,14 @@ Now that we have a working cluster, let's deploy a simple web application to see
 Run the following command to deploy Excalidraw:
 
 ```bash
-uc run --name excalidraw --publish 80/http excalidraw/excalidraw
+uc run -n excalidraw -p app.example.com:80/http excalidraw/excalidraw
 ```
 
 This command will:
 
 - Pull the `excalidraw/excalidraw` Docker image
 - Create a service named `excalidraw` with one container
-- Publish container port 80 as an HTTP endpoint
+- FIXME: Publish container port 80 as an HTTP endpoint
 
 After a few moments, you'll see output showing the service is running:
 
@@ -196,6 +224,8 @@ Congratulations! You've successfully created a multi-machine Uncloud cluster and
 
 **Next steps:**
 
-- Try scaling your service: `uc scale excalidraw 3`
-- Deploy services using Docker Compose files with `uc deploy`
+- Try scaling your service: `uc scale excalidraw 2`
+- Deploy services using Compose-like configuration with `uc deploy` (check examples [in the documentation](https://uncloud.run/docs/guides/deployments/deploy-app))
 - Learn about [publishing services](https://uncloud.run/docs/concepts/ingress/publishing-services) to the internet
+
+FIXME: add tab
