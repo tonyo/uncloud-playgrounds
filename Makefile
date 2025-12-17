@@ -36,7 +36,7 @@ PLAYGROUND_DIR = $(MANIFESTS_DIR)/playgrounds
 pull-playgrounds:
 	@mkdir -p $(PLAYGROUND_DIR)
 	@for id in $(PLAYGROUND_IDS); do \
-		labctl playground manifest $$id > $(PLAYGROUND_DIR)/$$id.yaml; \
+		labctl playground manifest $$id > $(PLAYGROUND_DIR)/$$id.yaml && \
 		echo ">>> Saved playground manifest for: $$id"; \
 	done
 .PHONY: pull-playgrounds
@@ -44,7 +44,7 @@ pull-playgrounds:
 push-playgrounds:
 	@for id in $(PLAYGROUND_IDS); do \
 		echo '---'; \
-		labctl playground update $$id -f $(PLAYGROUND_DIR)/$$id.yaml; \
+		labctl playground update $$id -f $(PLAYGROUND_DIR)/$$id.yaml && \
 		echo ">>> Pushed playground manifest for: $$id"; \
 	done
 .PHONY: push-playgrounds
@@ -61,3 +61,11 @@ pull-tutorials:
 		echo '---'; \
 		labctl content pull tutorial -f $$tutorial -d $(TUTORIALS_DIR)/$$tutorial; \
 	done
+
+push-tutorials:
+	for id in $(TUTORIALS_IDS); do \
+		echo '---'; \
+		labctl content push tutorial -f $$id -d $(TUTORIALS_DIR)/$$id/ && \
+		echo ">>> Pushed tutorial manifest for: $$id"; \
+	done
+.PHONY: push-tutorials
