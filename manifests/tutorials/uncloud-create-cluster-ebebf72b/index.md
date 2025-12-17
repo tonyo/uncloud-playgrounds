@@ -20,6 +20,15 @@ cover: __static__/cluster-diagram.png
 
 playground:
   name: uncloud-uninitialized-cluster-cacb63ae
+  tabs:
+    - machine: dev-machine
+    - machine: server-1
+    - machine: server-2
+    - kind: http-port
+      name: Excalidraw
+      number: 80
+      hostRewrite: excalidraw.internal
+      machine: server-1
 ---
 
 <!--
@@ -57,13 +66,12 @@ In this tutorial, you have access to 3 machines:
 - :tab{text='dev-machine' machine='dev-machine'} - the control-only environment that is not meant to run any actual containerized workloads. Think of it as your developer machine that you'll use to control the prospective cluster remotely.
 - :tab{text='server-1' machine='server-1'}, :tab{text='server-2' machine='server-2'} - two "clean" Ubuntu machines that will become part of your new Uncloud cluster.
 
-After you start the linked playground, you'll first see the shell on the :tab{text='dev-machine' machine='dev-machine'} machine with Uncloud CLI (`uc` for short) already installed there. To install `uc` manually on your local (personal, non-tutorial) machine, check out the [installation guide](https://uncloud.run/docs/getting-started/install-cli) for instructions.
+After you start the linked playground, you'll first see the shell on the :tab{text='dev-machine' machine='dev-machine'} server with Uncloud CLI (`uc` for short) already installed there. To install `uc` manually on your local (personal, non-tutorial) machine, check out the [installation guide](https://uncloud.run/docs/getting-started/install-cli) for instructions.
 
-To test that the `uc` command works, run the following to get the version of the Uncloud client:
+To test that the `uc` command works, run the following on :tab{text='dev-machine' machine='dev-machine'} to get the version of the Uncloud client:
 
 ```bash
-laborant@dev-machine:~$ uc --version
-uc version ...
+uc --version
 ```
 
 <!-- prettier-ignore-start -->
@@ -88,20 +96,16 @@ uc machine init laborant@server-1 --public-ip none --no-dns
 This command will install Docker, the Uncloud daemon (`uncloudd`), and all necessary dependencies on the remote machine. One critical component which is also installed automatically is the [Corrosion](https://github.com/superfly/corrosion) service, which will helpfully handle state synchronization and service discovery as soon as there's more than one machine in the cluster. Documentation on the `machine init` command can be found [here](https://uncloud.run/docs/cli-reference/uc_machine_init/).
 
 ::remark-box
-**Why use `--public-ip none`?** The `--public-ip none` flag tells Uncloud not to configure this machine for ingress (incoming internet traffic). In the iximiuz Labs environment, the machines don't have real public IP addresses accessible from the internet, so we disable ingress configuration. In production, you'd typically use `--public-ip auto` to automatically detect and configure ingress.
-
-FIXME
+**Why use `--public-ip none`?** The `--public-ip none` flag tells Uncloud not to configure this machine for ingress (incoming internet traffic) because in the multi-tenant iximiuz Labs environment we don't fully control the public IP addresses of the machine. In production, you'd typically use `--public-ip auto` (used by default) to automatically detect and configure ingress. Read more about publishing services in the [official documentation](https://uncloud.run/docs/concepts/ingress/publishing-services).
 ::
 
 ::remark-box
-**Why use `--no-dns`?** The `--no-dns` flag skips reserving a free `*.uncld.dev` subdomain via Uncloud's managed DNS service. In the iximiuz Labs environment, you don't need external DNS. You can always reserve a domain later with `uc dns reserve` if needed.
-
-FIXME
+**Why use `--no-dns`?** The `--no-dns` flag skips reserving a free `*.uncld.dev` subdomain via Uncloud's managed DNS service. In the iximiuz Labs environment, this feature won't work due to the environment limitations, but you can use it for real scenarios. Check [`uc dns`](https://uncloud.run/docs/cli-reference/uc_dns) documentation for more information.
 ::
 
 You can get the list of machines in the cluster along with their configuration and status via `uc machine ls` (or `uc m ls`, if you want to save a few keystrokes) command:
 
-```bash
+```
 laborant@dev-machine:~$ uc machine ls
 NAME           STATE   ADDRESS         PUBLIC IP        WIREGUARD ENDPOINTS                      MACHINE ID
 machine-incv   Up      10.210.0.1/24   -                172.16.0.3:51820, 65.109.107.161:51820   6cec579e3d6fb7ffb51c5503d163f1be
@@ -111,7 +115,7 @@ As we can see, `server-1` became the first (and the only so far) machine in our 
 
 - `NAME: machine-incv` - The unique name of the machine in the cluster; can be changed (see the [corresponding section below](#renaming-cluster-machines))
 - `STATE: Up` - The current state of the machine. "Up" means the machine is running and the Uncloud daemon is active.
-- `ADDRESS: 10.210.0.1/24` - The private IP address and subnet assigned to this machine in the WireGuard mesh network. Each machine gets its own `/24` subnet (e.g., 10.210.0.0/24, 10.210.1.0/24) from which container IP addresses are allocated.
+- `ADDRESS: 10.210.0.1/24` - The private IP address and subnet assigned to this machine in the WireGuard mesh network. Each machine gets its own `/24` subnet (by default, 10.210.0.0/24, 10.210.1.0/24, etc.) from which container IP addresses are allocated.
 - `PUBLIC IP: -` - The public IP address of the machine for ingress (if configured). Since we used `--public-ip none`, this field is empty and shows `-`.
 - `WIREGUARD ENDPOINTS` - The network endpoints where this machine's WireGuard interface can be reached by other machines in the cluster. This includes both private and public IP addresses with the WireGuard port.
 - `MACHINE ID` - A unique identifier for the machine; it doesn't change throughout the lifecycle of the machine.
@@ -130,33 +134,36 @@ Similar to `server-1`, `server-2` now has all the important components (Docker, 
 
 Let's check the current state of the cluster:
 
-```bash
+```
 laborant@dev-machine:~$ uc machine ls
 NAME           STATE   ADDRESS         PUBLIC IP        WIREGUARD ENDPOINTS                      MACHINE ID
 machine-incv   Up      10.210.0.1/24   -                172.16.0.3:51820, 65.109.107.161:51820   6cec579e3d6fb7ffb51c5503d163f1be
 machine-m4wy   Up      10.210.1.1/24   -                172.16.0.4:51820, 65.109.107.161:51820   e84e115eff8570ecccc54947aa482f5c
 ```
 
-Our cluster now consists of two nodes.
+Our cluster now consists of two nodes 🎉
 
-## Renaming Cluster Machines
+## Updating Cluster Machines
 
-By default, cluster nodes are assigned internal names with randomized suffixes such as `machine-incv` or `machine-m4wy`.
+By default, cluster machines are assigned internal names with randomized suffixes such as `machine-incv` or `machine-m4wy`.
 It is possible to override those names by using `-n/--name` option during `add` or `init` steps.
 
 You can also rename the cluster nodes via `uc machine rename` command, for example:
 
-```bash
-laborant@dev-machine:~$ uc machine rename machine-incv s1
-Machine "machine-incv" renamed to "s1" (ID: 42866c05a37171dbbc1165216e8f886e)
-laborant@dev-machine:~$ uc machine rename machine-m4wy s2
-Machine "machine-m4wy" renamed to "s2" (ID: 4c453ff7a1c870456cfd69f78e74a34a)
+```
+laborant@dev-machine:~$ uc machine rename machine-incv server-1
+Machine "machine-incv" renamed to "server-1" (ID: 42866c05a37171dbbc1165216e8f886e)
+
+laborant@dev-machine:~$ uc machine rename machine-m4wy server-2
+Machine "machine-m4wy" renamed to "server-2" (ID: 4c453ff7a1c870456cfd69f78e74a34a)
+
 laborant@dev-machine:~$ uc machine ls
 NAME   STATE   ADDRESS         PUBLIC IP        WIREGUARD ENDPOINTS                      MACHINE ID
-s1     Up      10.210.0.1/24   -                172.16.0.3:51820, 65.109.107.161:51820   42866c05a37171dbbc1165216e8f886e
-s2     Up      10.210.1.1/24   -                172.16.0.4:51820, 65.109.107.161:51820   4c453ff7a1c870456cfd69f78e74a34a
-
+server-1     Up      10.210.0.1/24   -                172.16.0.3:51820, 65.109.107.161:51820   42866c05a37171dbbc1165216e8f886e
+server-2     Up      10.210.1.1/24   -                172.16.0.4:51820, 65.109.107.161:51820   4c453ff7a1c870456cfd69f78e74a34a
 ```
+
+If you want to change other properties of the machines such as public IP address, use [`uc machine update`](https://uncloud.run/docs/cli-reference/uc_machine_update) command.
 
 ## Context Management and Connections
 
@@ -164,7 +171,7 @@ It's possible to manage more than one cluster from a single control node. Unclou
 
 `uc ctx` is the subcommand used for context management. Here's how you can list all available contexts on your control node:
 
-```bash
+```
 laborant@dev-machine:~$ uc ctx ls
 NAME      CURRENT   CONNECTIONS
 default   ✓         2
@@ -191,41 +198,84 @@ contexts:
 
 ## Running a Simple Service
 
-Now that we have a working cluster, let's deploy a simple web application to see everything in action. We'll use [Excalidraw](https://excalidraw.com), a popular sketching and diagramming tool.
+Now that we have a working cluster, let's deploy something useful to it.
 
-Run the following command to deploy Excalidraw:
+First, let's check the currently running services:
 
 ```bash
-uc run -n excalidraw -p app.example.com:80/http excalidraw/excalidraw
+uc ls
 ```
 
-This command will:
+The output should look like this:
 
-- Pull the `excalidraw/excalidraw` Docker image
-- Create a service named `excalidraw` with one container
-- FIXME: Publish container port 80 as an HTTP endpoint
+```
+NAME    MODE     REPLICAS   IMAGE          ENDPOINTS
+caddy   global   2          caddy:2.10.2
+```
+
+::remark-box
+💡 [`uc ls`](https://uncloud.run/docs/cli-reference/uc_ls) is a shortcut for the [`uc service ls`](https://uncloud.run/docs/cli-reference/uc_service_ls) command. Check all [`uc service`](https://uncloud.run/docs/cli-reference/uc_service) commands for available service operations.
+::
+
+We can see that the `caddy` web server is deployed in the "global" mode, which means that an instance (replica) of this service runs on each node of the cluster, in our case - on both `server-1` and `server-2`.
+
+Let's deploy a simple web application to see the cluster in action. We'll use [Excalidraw](https://excalidraw.com), a popular sketching and diagramming tool.
+
+Run the following command to deploy the Excalidraw service:
+
+```bash
+uc run -n excalidraw -p excalidraw.internal:80/http excalidraw/excalidraw
+```
 
 After a few moments, you'll see output showing the service is running:
 
 ```
 [+] Running service excalidraw (replicated mode) 2/2
- ✔ Container excalidraw-azpc on s1  Started
-   ✔ Image excalidraw/excalidraw on s1  Pulled
+ ✔ Container excalidraw-azpc on server-1  Started
+   ✔ Image excalidraw/excalidraw on server-1  Pulled
 
 excalidraw endpoints:
  • http://excalidraw.internal → :80
 ```
 
-**Accessing the service:** Since we initialized the cluster with `--no-dns` and `--public-ip none`, the service isn't accessible from the internet. However, you can access it within the cluster network using the internal DNS name `excalidraw.internal` or simply `excalidraw`.
+What `uc run` command did:
 
-**Checking service status:** Use `uc inspect excalidraw` to see detailed information about your running service, including which machine it's running on and its health status.
+- Picked one of the two available cluster machines at random (`server-1` in our case).
+- Pulled the `excalidraw/excalidraw` Docker image on that machine.
+- Created a service named `excalidraw` with one container.
+- Exposed the service on port 80 and `excalidraw.internal` hostname on ALL cluster machines, thanks to Caddy running in the "global" mode.
+
+Let's check the status of the new service:
+
+```
+laborant@dev-machine:~$ uc ls
+NAME         MODE         REPLICAS   IMAGE                   ENDPOINTS
+caddy        global       1          caddy:2.10.2
+excalidraw   replicated   1          excalidraw/excalidraw   http://excalidraw.internal → :80
+
+laborant@dev-machine:~$ uc inspect excalidraw
+Service ID: 0af10efcb5a0d9155268bbbcbfc1419f
+Name:       excalidraw
+Mode:       replicated
+CONTAINER ID   IMAGE                   CREATED         STATUS                   IP ADDRESS   MACHINE
+38410444eaf3   excalidraw/excalidraw   2 minutes ago   Up 2 minutes (healthy)   10.210.0.3   server-1
+```
+
+### Accessing the service
+
+You can now access the running app via the :tab{text='Excalidraw' name='Excalidraw'} tab. If the app doesn't load, wait a few seconds and click the "Refresh" button.
+
+You can also reach the service from the :tab{text='dev-machine' machine='dev-machine'} terminal. In that case, make sure to specify the correct "Host" header:
+
+```sh
+# You can target ANY server of the cluster (server-1 or server-2)
+curl -H 'Host: excalidraw.internal' server-1
+```
 
 Congratulations! You've successfully created a multi-machine Uncloud cluster and deployed your first service. You can now explore more advanced features like scaling services across machines, using Docker Compose files, and setting up HTTPS ingress with custom domains.
 
-**Next steps:**
+## Next steps
 
-- Try scaling your service: `uc scale excalidraw 2`
+- Scale your service to 2 replicas with [`uc scale`](https://uncloud.run/docs/cli-reference/uc_scale) command: `uc scale excalidraw 2`
 - Deploy services using Compose-like configuration with `uc deploy` (check examples [in the documentation](https://uncloud.run/docs/guides/deployments/deploy-app))
 - Learn about [publishing services](https://uncloud.run/docs/concepts/ingress/publishing-services) to the internet
-
-FIXME: add tab
