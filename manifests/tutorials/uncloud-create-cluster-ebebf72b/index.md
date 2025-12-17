@@ -66,7 +66,7 @@ In this tutorial, you have access to 3 machines:
 - :tab{text='dev-machine' machine='dev-machine'} - the control-only environment that is not meant to run any actual containerized workloads. Think of it as your developer machine that you'll use to control the prospective cluster remotely.
 - :tab{text='server-1' machine='server-1'}, :tab{text='server-2' machine='server-2'} - two "clean" Ubuntu machines that will become part of your new Uncloud cluster.
 
-After you start the linked playground, you'll first see the shell on the :tab{text='dev-machine' machine='dev-machine'} server with Uncloud CLI (`uc` for short) already installed there. To install `uc` manually on your local (personal, non-tutorial) machine, check out the [installation guide](https://uncloud.run/docs/getting-started/install-cli) for instructions.
+After you start the linked playground, you'll first see the shell on :tab{text='dev-machine' machine='dev-machine'} with Uncloud CLI (`uc` for short) already installed there. To install `uc` manually on your local (personal, non-tutorial) machine, check out the [installation guide](https://uncloud.run/docs/getting-started/install-cli) for instructions.
 
 To test that the `uc` command works, run the following on :tab{text='dev-machine' machine='dev-machine'} to get the version of the Uncloud client:
 
@@ -217,7 +217,7 @@ caddy   global   2          caddy:2.10.2
 💡 [`uc ls`](https://uncloud.run/docs/cli-reference/uc_ls) is a shortcut for the [`uc service ls`](https://uncloud.run/docs/cli-reference/uc_service_ls) command. Check all [`uc service`](https://uncloud.run/docs/cli-reference/uc_service) commands for available service operations.
 ::
 
-We can see that the `caddy` web server is deployed in the "global" mode, which means that an instance (replica) of this service runs on each node of the cluster, in our case - on both `server-1` and `server-2`.
+We can see that the Caddy web server was automatically deployed in the "global" mode, which means that an instance (replica) of this service runs on each node of the cluster, in our case - on both `server-1` and `server-2`. Caddy will help us later by automatically routing requests to the right machines and containers. Read more about managing Caddy deployment and configuration [in the documentation](https://uncloud.run/docs/concepts/ingress/managing-caddy).
 
 Let's deploy a simple web application to see the cluster in action. We'll use [Excalidraw](https://excalidraw.com), a popular sketching and diagramming tool.
 
