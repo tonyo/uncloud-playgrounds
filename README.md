@@ -31,12 +31,12 @@ All images are published to [`ghcr.io/tonyo/uncloud-playgrounds/rootfs`](https:/
 
 ```bash
 # Build
-make build-uncloud-devmachine
-make build-uncloud-server
+make build-img-uncloud-devmachine
+make build-img-uncloud-server
 
 # Build and Push
-make push-uncloud-devmachine
-make push-uncloud-server
+make push-img-uncloud-devmachine
+make push-img-uncloud-server
 
 ```
 

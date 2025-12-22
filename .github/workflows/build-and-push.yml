@@ -39,11 +39,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build image
-        run: make build-${{ matrix.image }}
+        run: make build-img-${{ matrix.image }}
 
       - name: Test image
-        run: make test-${{ matrix.image }}
+        run: make test-img-${{ matrix.image }}
 
       - name: Push image
         if: github.ref == 'refs/heads/main'
-        run: make push-${{ matrix.image }}
+        run: make push-img-${{ matrix.image }}

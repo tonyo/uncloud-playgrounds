@@ -6,22 +6,22 @@ MANIFESTS_DIR = manifests
 all:
 	exit 1
 
-build-%:
+build-img-%:
 	docker build \
 		--progress plain \
 		-f ./$*/Dockerfile \
 		-t $(IMAGE_REPO):$* \
 		.
-.PHONY: build-%
+.PHONY: build-img-%
 
-push-%: build-%
+push-img-%: build-img-%
 	docker push $(IMAGE_REPO):$*
-.PHONY: push-%
+.PHONY: push-img-%
 
-test-%: build-%
+test-img-%: build-img-%
 	@test -f $*/test.sh || { echo "Error: $*/test.sh not found"; exit 1; }
 	docker run --rm $(IMAGE_REPO):$* bash -c "$$(cat $*/test.sh)"
-.PHONY: test-%
+.PHONY: test-img-%
 
 ### Playgrounds
 
@@ -69,3 +69,14 @@ push-tutorials:
 		echo ">>> Pushed tutorial manifest for: $$id"; \
 	done
 .PHONY: push-tutorials
+
+stream-tutorial:
+	@echo "Available tutorials:"
+	@for tutorial in $(TUTORIALS_IDS); do \
+		echo " - $$tutorial"; \
+	done
+.PHONY: stream-tutorial
+
+stream-tutorial/%:
+	labctl content push tutorial -f -w $* -d $(TUTORIALS_DIR)/$*/
+.PHONY: push-stream-tutorial/%
