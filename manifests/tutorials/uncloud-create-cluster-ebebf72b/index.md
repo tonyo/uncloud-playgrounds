@@ -291,3 +291,7 @@ Congratulations! You've successfully created a multi-machine Uncloud cluster and
 - Scale your service to 2 replicas with [`uc scale`](https://uncloud.run/docs/cli-reference/uc_scale) command: `uc scale excalidraw 2`
 - Deploy services using Compose-like configuration with `uc deploy` (check examples [in the documentation](https://uncloud.run/docs/guides/deployments/deploy-app))
 - Learn about [publishing services](https://uncloud.run/docs/concepts/ingress/publishing-services) to the internet
+
+## Questions or Feedback?
+
+Run into any issues or have ideas to improve this tutorial? Open an issue or contribute a fix on GitHub: https://github.com/tonyo/uncloud-labs/
