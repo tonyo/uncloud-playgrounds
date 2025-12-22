@@ -113,7 +113,7 @@ machine-incv   Up      10.210.0.1/24   -                172.16.0.3:51820, 65.109
 
 As we can see, `server-1` became the first (and the only so far) machine in our new cluster. Let's break down what each column means:
 
-- `NAME: machine-incv` - The unique name of the machine in the cluster; can be changed (see the [corresponding section below](#renaming-cluster-machines))
+- `NAME: machine-incv` - The unique name of the machine in the cluster; can vary from cluster to cluster. Can be changed (see the [corresponding section below](#updating-cluster-machines))
 - `STATE: Up` - The current state of the machine. "Up" means the machine is running and the Uncloud daemon is active.
 - `ADDRESS: 10.210.0.1/24` - The private IP address and subnet assigned to this machine in the WireGuard mesh network. Each machine gets its own `/24` subnet (by default, 10.210.0.0/24, 10.210.1.0/24, etc.) from which container IP addresses are allocated.
 - `PUBLIC IP: -` - The public IP address of the machine for ingress (if configured). Since we used `--public-ip none`, this field is empty and shows `-`.
@@ -169,7 +169,7 @@ If you want to change other properties of the machines such as public IP address
 
 It's possible to manage more than one cluster from a single control node. Uncloud CLI has context support, letting you switch between multiple clusters when necessary.
 
-`uc ctx` is the subcommand used for context management. Here's how you can list all available contexts on your control node:
+[`uc ctx`](https://uncloud.run/docs/cli-reference/uc_ctx) is the subcommand used for context management. Here's how you can list all available contexts on your control node:
 
 ```
 laborant@dev-machine:~$ uc ctx ls
@@ -196,9 +196,11 @@ contexts:
 
 **Note:** A cluster context can have one or more connections, and each connection represents a way to reach a machine in the cluster via SSH. When you run commands, Uncloud automatically uses one of the available connections to communicate with the cluster. If one machine is unreachable, Uncloud CLI will try another connection until it finds the working one.
 
+To switch contexts, use [`uc ctx use`](https://uncloud.run/docs/cli-reference/uc_ctx_use) command.
+
 ## Running a Simple Service
 
-Now that we have a working cluster, let's deploy something useful to it.
+Now that we have a working cluster, let's deploy a simple web application to see the cluster in action. We'll use [Excalidraw](https://excalidraw.com), a popular sketching and diagramming tool.
 
 First, let's check the currently running services:
 
@@ -219,9 +221,7 @@ caddy   global   2          caddy:2.10.2
 
 We can see that the Caddy web server was automatically deployed in the "global" mode, which means that an instance (replica) of this service runs on each node of the cluster, in our case - on both `server-1` and `server-2`. Caddy will help us later by automatically routing requests to the right machines and containers. Read more about managing Caddy deployment and configuration [in the documentation](https://uncloud.run/docs/concepts/ingress/managing-caddy).
 
-Let's deploy a simple web application to see the cluster in action. We'll use [Excalidraw](https://excalidraw.com), a popular sketching and diagramming tool.
-
-Run the following command to deploy the Excalidraw service:
+We are ready to run the following command to deploy the Excalidraw service:
 
 ```bash
 uc run -n excalidraw -p excalidraw.internal:80/http excalidraw/excalidraw
@@ -264,6 +264,18 @@ CONTAINER ID   IMAGE                   CREATED         STATUS                   
 ### Accessing the service
 
 You can now access the running app via the :tab{text='Excalidraw' name='Excalidraw'} tab. If the app doesn't load, wait a few seconds and click the "Refresh" button.
+
+<!-- prettier-ignore-start -->
+::image-box
+---
+:src: __static__/excalidraw-screenshot.png
+:alt: 'Running Excalidraw Service'
+:max-width: 600px
+---
+
+_Click on the image to zoom in._
+::
+<!-- prettier-ignore-end -->
 
 You can also reach the service from the :tab{text='dev-machine' machine='dev-machine'} terminal. In that case, make sure to specify the correct "Host" header:
 
